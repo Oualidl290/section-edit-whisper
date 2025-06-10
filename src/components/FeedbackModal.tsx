@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { X, Upload, Check, FileText, Camera } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface FeedbackModalProps {
   sectionId: string;
@@ -18,6 +20,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +28,63 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
     setIsSubmitting(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitting(false);
-    setIsSuccess(true);
+    try {
+      // Prepare the data for submission
+      const submissionData = {
+        message: feedback,
+        section_id: sectionId,
+        page_url: window.location.href,
+        status: 'open',
+        submitted_by: 'client' // Since this is for client submissions
+      };
 
-    // Auto close after 2 seconds
-    setTimeout(() => {
-      onClose();
-    }, 2000);
+      console.log('Submitting feedback:', submissionData);
+
+      // Submit to Supabase
+      const { data, error } = await supabase
+        .from('edit_requests')
+        .insert([submissionData])
+        .select();
+
+      if (error) {
+        console.error('Error submitting feedback:', error);
+        toast({
+          title: "Error",
+          description: "Failed to submit your request. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('Feedback submitted successfully:', data);
+
+      // Handle file upload if there's a file
+      if (file && data && data[0]) {
+        console.log('File upload will be implemented in future version:', file.name);
+        // For now, just log the file info since storage isn't set up yet
+      }
+
+      setIsSuccess(true);
+      toast({
+        title: "Success!",
+        description: "Your edit request has been submitted successfully."
+      });
+
+      // Auto close after 2 seconds
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,10 +225,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* Hidden inputs */}
-          <input type="hidden" name="sectionId" value={sectionId} />
-          <input type="hidden" name="pageUrl" value={window.location.href} />
 
           {/* Submit Button */}
           <button
