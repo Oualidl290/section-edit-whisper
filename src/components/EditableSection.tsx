@@ -1,7 +1,11 @@
 
 import React, { useState } from 'react';
-import { FileText, Settings, Image } from 'lucide-react';
+import { Edit, MessageSquare } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import FeedbackModal from './FeedbackModal';
+import RepliesModal from './RepliesModal';
 
 interface EditableSectionProps {
   sectionId: string;
@@ -19,7 +23,19 @@ const EditableSection: React.FC<EditableSectionProps> = ({
   className = ""
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showRepliesModal, setShowRepliesModal] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  const handleEditRequest = () => {
+    setPopoverOpen(false);
+    setShowFeedbackModal(true);
+  };
+
+  const handleShowReplies = () => {
+    setPopoverOpen(false);
+    setShowRepliesModal(true);
+  };
 
   return (
     <>
@@ -38,15 +54,50 @@ const EditableSection: React.FC<EditableSectionProps> = ({
           <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none" />
         )}
         
-        {/* Floating Edit Button */}
+        {/* Floating Edit Icon with Popover */}
         {isHovered && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center gap-2 text-sm font-medium z-10"
-          >
-            <Settings className="w-4 h-4" />
-            Request Edit
-          </button>
+          <div className="absolute top-4 right-4 z-10">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="w-8 h-8 bg-white hover:bg-blue-50 border-blue-200 shadow-lg rounded-full"
+                      >
+                        <Edit className="w-4 h-4 text-blue-600" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-2" align="end">
+                      <div className="space-y-1">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-sm"
+                          onClick={handleEditRequest}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Request
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-sm"
+                          onClick={handleShowReplies}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Show Replies
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click to give feedback</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
 
         {/* Section Content */}
@@ -63,11 +114,20 @@ const EditableSection: React.FC<EditableSectionProps> = ({
         </div>
       </div>
 
-      {showModal && (
+      {/* Modals */}
+      {showFeedbackModal && (
         <FeedbackModal
           sectionId={sectionId}
           sectionTitle={title}
-          onClose={() => setShowModal(false)}
+          onClose={() => setShowFeedbackModal(false)}
+        />
+      )}
+
+      {showRepliesModal && (
+        <RepliesModal
+          sectionId={sectionId}
+          sectionTitle={title}
+          onClose={() => setShowRepliesModal(false)}
         />
       )}
     </>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Upload, Check, FileText, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,18 +28,20 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Prepare the data for submission
+      // Extract domain/project info from URL for project_id
+      const projectId = window.location.hostname.replace(/\./g, '-') || 'default-project';
+      
       const submissionData = {
         message: feedback,
         section_id: sectionId,
         page_url: window.location.href,
-        status: 'open',
-        submitted_by: 'client' // Since this is for client submissions
+        status: 'pending',
+        submitted_by: 'client',
+        project_id: projectId
       };
 
       console.log('Submitting feedback:', submissionData);
 
-      // Submit to Supabase
       const { data, error } = await supabase
         .from('edit_requests')
         .insert([submissionData])
@@ -58,10 +59,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
       console.log('Feedback submitted successfully:', data);
 
-      // Handle file upload if there's a file
       if (file && data && data[0]) {
         console.log('File upload will be implemented in future version:', file.name);
-        // For now, just log the file info since storage isn't set up yet
       }
 
       setIsSuccess(true);
@@ -70,7 +69,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         description: "Your edit request has been submitted successfully."
       });
 
-      // Auto close after 2 seconds
       setTimeout(() => {
         onClose();
       }, 2000);
@@ -137,7 +135,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Request Edit</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Edit Request</h2>
             <p className="text-sm text-gray-500 mt-1">{sectionTitle}</p>
           </div>
           <button
