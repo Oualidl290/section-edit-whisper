@@ -30,14 +30,20 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     setIsSubmitting(true);
     
     try {
-      // Get the user's project from their profile
+      // Get the user's project from their profile with type assertion
       const { data: profile } = await supabase
         .from('profiles')
-        .select('project_ref')
+        .select('project_id')
         .eq('id', user.id)
         .single();
 
-      if (!profile?.project_ref) {
+      // Fallback: try to get project_ref from user metadata if profile doesn't have it
+      const projectRef = (profile as any)?.project_ref || 
+                        (profile as any)?.project_id || 
+                        user.user_metadata?.project_ref || 
+                        user.user_metadata?.project_id;
+
+      if (!projectRef) {
         toast({
           title: "Error",
           description: "No project associated with your account. Please contact your designer.",
@@ -52,7 +58,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         page_url: window.location.href,
         status: 'pending',
         submitted_by: 'client',
-        project_id: profile.project_ref
+        project_id: projectRef
       };
 
       console.log('Submitting feedback:', submissionData);

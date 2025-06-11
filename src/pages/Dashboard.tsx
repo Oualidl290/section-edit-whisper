@@ -67,11 +67,11 @@ const Dashboard = () => {
                   <p className="text-sm text-gray-600 flex items-center gap-2">
                     <User className="w-3 h-3" />
                     {user?.email}
-                    {profile.project_ref && (
+                    {(profile.project_ref || profile.project_id || user?.user_metadata?.project_ref) && (
                       <>
                         <span className="text-gray-400">•</span>
                         <Briefcase className="w-3 h-3" />
-                        Project: {profile.project_ref}
+                        Project: {profile.project_ref || profile.project_id || user?.user_metadata?.project_ref}
                       </>
                     )}
                   </p>
