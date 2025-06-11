@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, Check, FileText, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './AuthProvider';
 
 interface FeedbackModalProps {
   sectionId: string;
@@ -20,24 +21,38 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feedback.trim()) return;
+    if (!feedback.trim() || !user) return;
 
     setIsSubmitting(true);
     
     try {
-      // Extract domain/project info from URL for project_id
-      const projectId = window.location.hostname.replace(/\./g, '-') || 'default-project';
-      
+      // Get the user's project from their profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('project_ref')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.project_ref) {
+        toast({
+          title: "Error",
+          description: "No project associated with your account. Please contact your designer.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const submissionData = {
         message: feedback,
         section_id: sectionId,
         page_url: window.location.href,
         status: 'pending',
         submitted_by: 'client',
-        project_id: projectId
+        project_id: profile.project_ref
       };
 
       console.log('Submitting feedback:', submissionData);
