@@ -3,14 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Database } from '@/integrations/supabase/types';
 
-interface Reply {
-  id: string;
-  message: string;
-  status: string;
-  created_at: string;
-  replies: any[];
-}
+type EditRequest = Database['public']['Tables']['edit_requests']['Row'];
 
 interface RepliesModalProps {
   sectionId: string;
@@ -23,7 +18,7 @@ const RepliesModal: React.FC<RepliesModalProps> = ({
   sectionTitle,
   onClose
 }) => {
-  const [requests, setRequests] = useState<Reply[]>([]);
+  const [requests, setRequests] = useState<EditRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -93,6 +88,19 @@ const RepliesModal: React.FC<RepliesModalProps> = ({
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const parseReplies = (replies: any) => {
+    if (!replies) return [];
+    if (Array.isArray(replies)) return replies;
+    if (typeof replies === 'string') {
+      try {
+        return JSON.parse(replies);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
@@ -125,44 +133,48 @@ const RepliesModal: React.FC<RepliesModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {requests.map((request) => (
-                <div key={request.id} className="border border-gray-200 rounded-xl p-4">
-                  {/* Request Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(request.status)}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                        {request.status.replace('_', ' ').toUpperCase()}
+              {requests.map((request) => {
+                const replies = parseReplies(request.replies);
+                
+                return (
+                  <div key={request.id} className="border border-gray-200 rounded-xl p-4">
+                    {/* Request Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(request.status)}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                          {request.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(request.created_at)}
                       </span>
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {formatDate(request.created_at)}
-                    </span>
-                  </div>
 
-                  {/* Request Message */}
-                  <div className="mb-3">
-                    <p className="text-gray-900">{request.message}</p>
-                  </div>
-
-                  {/* Replies */}
-                  {request.replies && request.replies.length > 0 && (
-                    <div className="space-y-2 border-l-2 border-blue-100 pl-4 ml-2">
-                      {request.replies.map((reply: any, index: number) => (
-                        <div key={index} className="bg-blue-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-blue-700">Designer Reply</span>
-                            <span className="text-xs text-blue-600">
-                              {reply.created_at ? formatDate(reply.created_at) : 'Recently'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-blue-900">{reply.message}</p>
-                        </div>
-                      ))}
+                    {/* Request Message */}
+                    <div className="mb-3">
+                      <p className="text-gray-900">{request.message}</p>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Replies */}
+                    {replies.length > 0 && (
+                      <div className="space-y-2 border-l-2 border-blue-100 pl-4 ml-2">
+                        {replies.map((reply: any, index: number) => (
+                          <div key={index} className="bg-blue-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-blue-700">Designer Reply</span>
+                              <span className="text-xs text-blue-600">
+                                {reply.created_at ? formatDate(reply.created_at) : 'Recently'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-blue-900">{reply.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
