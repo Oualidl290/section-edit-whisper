@@ -48,25 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, projectId: string) => {
-    // First validate if the project ID exists using raw SQL query
-    const { data: project, error: projectError } = await supabase.rpc('validate_project', { 
-      project_id_input: projectId 
-    }).catch(async () => {
-      // Fallback: direct query if RPC doesn't exist
-      const { data, error } = await supabase
-        .from('profiles' as any)
-        .select('*')
-        .limit(1);
-      
-      // For now, allow demo project or any project starting with 'proj_'
-      if (projectId === 'proj_demo123' || projectId.startsWith('proj_')) {
-        return { data: [{ project_id: projectId }], error: null };
-      }
-      
-      return { data: null, error: { message: 'Invalid Project ID' } };
-    });
-
-    if (projectError || !project) {
+    // Simple validation for demo purposes - allow demo project or projects starting with 'proj_'
+    if (projectId !== 'proj_demo123' && !projectId.startsWith('proj_')) {
       return { error: { message: 'Invalid Project ID. Please contact your designer.' } };
     }
 
