@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, UserPlus, LogIn } from 'lucide-react';
+import { Eye, EyeOff, UserPlus, LogIn, Globe } from 'lucide-react';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -16,9 +16,16 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, projectId: contextProjectId } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Pre-fill project ID from context if available
+  useEffect(() => {
+    if (contextProjectId && !projectId) {
+      setProjectId(contextProjectId);
+    }
+  }, [contextProjectId, projectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +86,14 @@ const Auth = () => {
               : 'Sign in to access your feedback dashboard'
             }
           </p>
+          {contextProjectId && (
+            <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-xs text-blue-700 flex items-center justify-center gap-1">
+                <Globe className="w-3 h-3" />
+                <strong>Widget Project:</strong> {contextProjectId}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Form */}
@@ -121,7 +136,10 @@ const Auth = () => {
             <div>
               <Label htmlFor="projectId">Project ID</Label>
               <p className="text-sm text-gray-500 mb-2">
-                Enter the Project ID your designer provided to join their workspace.
+                {contextProjectId 
+                  ? 'Project ID detected from widget context. You can override it if needed.'
+                  : 'Enter the Project ID your designer provided to join their workspace.'
+                }
               </p>
               <Input
                 id="projectId"

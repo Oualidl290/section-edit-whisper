@@ -2,11 +2,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useProjectId } from '@/hooks/useProjectId';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  projectId: string | null;
   signUp: (email: string, password: string, projectId: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -26,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const projectId = useProjectId();
 
   useEffect(() => {
     // Set up auth state listener
@@ -34,6 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Notify WordPress of auth state changes
+        if (session?.user) {
+          window.postMessage({
+            type: 'lef-user-authenticated',
+            userId: session.user.id,
+            projectId: projectId
+          }, '*');
+        }
       }
     );
 
@@ -45,11 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [projectId]);
 
-  const signUp = async (email: string, password: string, projectId: string) => {
+  const signUp = async (email: string, password: string, projectIdParam: string) => {
+    // Use the provided project ID or fall back to the context project ID
+    const targetProjectId = projectIdParam || projectId;
+    
     // Simple validation for demo purposes - allow demo project or projects starting with 'proj_'
-    if (projectId !== 'proj_demo123' && !projectId.startsWith('proj_')) {
+    if (targetProjectId !== 'proj_demo123' && !targetProjectId?.startsWith('proj_')) {
       return { error: { message: 'Invalid Project ID. Please contact your designer.' } };
     }
 
@@ -62,8 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         emailRedirectTo: redirectUrl,
         data: {
           role: 'client',
-          project_id: projectId,
-          project_ref: projectId
+          project_id: targetProjectId,
+          project_ref: targetProjectId
         }
       }
     });
@@ -82,12 +97,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    
+    // Notify WordPress of sign out
+    window.postMessage({
+      type: 'lef-user-signed-out',
+      projectId: projectId
+    }, '*');
   };
 
   const value = {
     user,
     session,
     loading,
+    projectId,
     signUp,
     signIn,
     signOut

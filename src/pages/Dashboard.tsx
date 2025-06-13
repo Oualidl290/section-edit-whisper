@@ -3,11 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Briefcase } from 'lucide-react';
+import { LogOut, User, Briefcase, Globe } from 'lucide-react';
 import Index from './Index';
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, projectId } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,6 +16,17 @@ const Dashboard = () => {
       fetchProfile();
     }
   }, [user]);
+
+  // Notify WordPress that the dashboard is ready
+  useEffect(() => {
+    if (user && projectId) {
+      window.postMessage({
+        type: 'lef-dashboard-ready',
+        userId: user.id,
+        projectId: projectId
+      }, '*');
+    }
+  }, [user, projectId]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -63,19 +74,30 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Feedback Dashboard</h1>
-                {profile && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
                     <User className="w-3 h-3" />
                     {user?.email}
-                    {(profile.project_ref || profile.project_id || user?.user_metadata?.project_ref) && (
-                      <>
-                        <span className="text-gray-400">•</span>
+                  </div>
+                  {projectId && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-3 h-3" />
+                        Widget Project: {projectId}
+                      </div>
+                    </>
+                  )}
+                  {(profile?.project_ref || profile?.project_id || user?.user_metadata?.project_ref) && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <div className="flex items-center gap-2">
                         <Briefcase className="w-3 h-3" />
-                        Project: {profile.project_ref || profile.project_id || user?.user_metadata?.project_ref}
-                      </>
-                    )}
-                  </p>
-                )}
+                        User Project: {profile?.project_ref || profile?.project_id || user?.user_metadata?.project_ref}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <Button
