@@ -17,14 +17,46 @@ const initClientWidget = (config: { projectId: string }) => {
   }
 };
 
-// Initialize on DOM content loaded
-document.addEventListener('DOMContentLoaded', function() {
-  // Get project ID from parent container
-  const projectId = document.getElementById('lef-client-root')?.dataset?.projectId;
+// Listen for WordPress Bridge messages
+window.addEventListener('message', function(event) {
+  // Only listen to messages from the parent window
+  if (event.source !== window.parent) return;
   
-  // Initialize your app with the project ID
+  // Handle widget initialization from WordPress Bridge
+  if (event.data.type === 'init-client-widget' && event.data.projectId) {
+    console.log('Received init message from WordPress Bridge:', event.data);
+    
+    initClientWidget({
+      projectId: event.data.projectId
+    });
+    
+    // Confirm ready state back to WordPress
+    window.parent.postMessage({
+      type: 'lef-widget-ready',
+      widget: 'client',
+      projectId: event.data.projectId
+    }, '*');
+  }
+});
+
+// Initialize on DOM content loaded (fallback method)
+document.addEventListener('DOMContentLoaded', function() {
+  // First, check if we already have a project ID from postMessage
+  const storedProjectId = sessionStorage.getItem('widget_project_id');
+  if (storedProjectId) {
+    console.log('Widget already initialized with project ID:', storedProjectId);
+    return;
+  }
+  
+  // Fallback: Get project ID from parent container data attribute
+  const rootContainer = document.getElementById('lef-client-root') || 
+                        document.querySelector('[data-project-id]') ||
+                        document.getElementById('root')?.parentElement;
+  
+  const projectId = rootContainer?.dataset?.projectId;
+  
   if (projectId) {
-    console.log('Initializing Client Widget with project ID:', projectId);
+    console.log('Initializing Client Widget with project ID from data attribute:', projectId);
     
     // Initialize the client widget
     initClientWidget({
@@ -32,15 +64,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Confirm ready state to WordPress
-    window.postMessage({
+    window.parent.postMessage({
       type: 'lef-widget-ready',
       widget: 'client',
       projectId: projectId
     }, '*');
   } else {
-    console.error('Missing project ID for Client Widget');
+    console.warn('No project ID found. Widget will initialize without project context.');
     
-    // Fallback: try to initialize anyway for development
+    // Initialize anyway for development/testing
     const rootElement = document.getElementById("root");
     if (rootElement) {
       createRoot(rootElement).render(<App />);

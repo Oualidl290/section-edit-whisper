@@ -38,11 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Notify WordPress of auth state changes
+        // Notify WordPress Bridge of auth state changes
         if (session?.user) {
-          window.postMessage({
+          window.parent.postMessage({
             type: 'lef-user-authenticated',
             userId: session.user.id,
+            projectId: projectId
+          }, '*');
+        } else if (event === 'SIGNED_OUT') {
+          window.parent.postMessage({
+            type: 'lef-user-signed-out',
             projectId: projectId
           }, '*');
         }
@@ -98,8 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     await supabase.auth.signOut();
     
-    // Notify WordPress of sign out
-    window.postMessage({
+    // Notify WordPress Bridge of sign out
+    window.parent.postMessage({
       type: 'lef-user-signed-out',
       projectId: projectId
     }, '*');

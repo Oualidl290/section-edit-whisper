@@ -17,10 +17,10 @@ const Dashboard = () => {
     }
   }, [user]);
 
-  // Notify WordPress that the dashboard is ready
+  // Notify WordPress Bridge that the dashboard is ready
   useEffect(() => {
     if (user && projectId) {
-      window.postMessage({
+      window.parent.postMessage({
         type: 'lef-dashboard-ready',
         userId: user.id,
         projectId: projectId
