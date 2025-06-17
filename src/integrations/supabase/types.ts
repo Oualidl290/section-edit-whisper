@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      comments: {
+        Row: {
+          author: string | null
+          comment: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          project_id: string
+          status: string
+          user_name: string | null
+          x: number
+          y: number
+        }
+        Insert: {
+          author?: string | null
+          comment: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id: string
+          status?: string
+          user_name?: string | null
+          x: number
+          y: number
+        }
+        Update: {
+          author?: string | null
+          comment?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          project_id?: string
+          status?: string
+          user_name?: string | null
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       edit_requests: {
         Row: {
           created_at: string
@@ -69,6 +123,68 @@ export type Database = {
           project_id?: string
           role?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          client_secret: string | null
+          created_at: string
+          created_by: string
+          designer_id: string
+          id: string
+          name: string
+          slug: string | null
+          url: string
+        }
+        Insert: {
+          client_secret?: string | null
+          created_at?: string
+          created_by?: string
+          designer_id: string
+          id?: string
+          name: string
+          slug?: string | null
+          url: string
+        }
+        Update: {
+          client_secret?: string | null
+          created_at?: string
+          created_by?: string
+          designer_id?: string
+          id?: string
+          name?: string
+          slug?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_designer_id_fkey"
+            columns: ["designer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
         }
         Relationships: []
       }
